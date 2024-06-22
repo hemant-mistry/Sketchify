@@ -7,7 +7,7 @@ import {
   RouterProvider,
 } from "react-router-dom";
 import Test from './components/Test.jsx';
-import Room from './components/Room.jsx';
+import Room from './components/Canvas.jsx';
 
 const router = createBrowserRouter([
   {
