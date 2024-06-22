@@ -7,22 +7,18 @@ import {
   RouterProvider,
 } from "react-router-dom";
 import Test from './components/Test.jsx';
+
 const router = createBrowserRouter([
   {
     path: "/",
     element: <App />,
-    children: [
-      {
-        path: "/room/:roomNumber",
-        element: <Test />,
-        action: () => {
-          console.log('Room Number:', roomNumber)
-          console.log('Option 1:', option1)
-          console.log('Option 2:', option2)
-        }
-      }
-    ]
+
   },
+  {
+    path: "/room/:roomNumber",
+    element: <Test />,
+    
+  }
 
 ]);
 

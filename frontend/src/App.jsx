@@ -1,29 +1,34 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
-import { Form } from "react-router-dom";
-
-import { Link, Navigate, redirect } from "react-router-dom";
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import Test from './components/Test';
-import { useParams } from 'react-router-dom';
-
 
 function App() {
+  const [roomNumber, setRoomNumber] = useState('');
+  const navigate = useNavigate();
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log('Room Number:', roomNumber);
+    navigate(`/room/${roomNumber}`); // Use navigate to redirect
+    
+  };
+
   return (
     <div>
       <h1>Sketchify</h1>
-      <p>Sketchify is a web-based collaborative drawing tool.</p>
-      <p>Click the button below to start a new room.</p>
-      <Link to="/room/1">Start a new room</Link>
-
-      <Form>
-        <input type="text" placeholder="Enter room number" />
+      {/* ... other content */}
+      <form onSubmit={handleSubmit}>
+        <label htmlFor="roomNumber">Room Number:</label>
+        <input
+          type="text"
+          id="roomNumber"
+          name="roomNumber"
+          onChange={(e) => setRoomNumber(e.target.value)}
+        />
         <button type="submit">Join room</button>
-      </Form>
-      
+      </form>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;

@@ -1,18 +1,13 @@
 import React from 'react'
 import { useParams } from 'react-router-dom';
 
-
-const Test = ({ formData }) => {
-    const { option1, option2 } = formData;
+const Test = () => {
     const { roomNumber } = useParams();
-    return (
-        <div>
-            <h1>Test</h1>
-            <p>Room Number: {roomNumber}</p>
-            <p>Option 1: {option1 ? 'Yes' : 'No'}</p>
-            <p>Option 2: {option2 ? 'Yes' : 'No'}</p>
-        </div>
-    );
-};
+  return (
+    <div>
+      <h1>Room Number: {roomNumber}</h1>
+    </div>
+  )
+}
 
 export default Test
