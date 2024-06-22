@@ -1,0 +1,7 @@
+#exclude virtual environment
+backend/env
+
+#exclude env
+backend/.env
+
+
