@@ -36,6 +36,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -43,8 +44,12 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'sketchify'
+    'sketchify',
+    'channels',
+    'corsheaders'
 ]
+
+CORS_ALLOW_ALL_ORIGINS = True
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -75,7 +80,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'sketchifybackend.wsgi.application'
-
+ASGI_APPLICATION = 'sketchifybackend.asgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
@@ -96,6 +101,21 @@ CACHES = {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
         "LOCATION": f"rediss://:{os.getenv('AZURE_REDIS_CACHE_KEY')}@sketchify.redis.cache.windows.net:6380/0"
     }
+}
+
+
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [('rediss://:{password}@{hostname}:{port}'.format(
+                password=os.getenv('AZURE_REDIS_CACHE_KEY'),
+                hostname=os.getenv('AZURE_REDIS_HOST_NAME'),
+                port=6380
+            ))],
+        },
+    },
 }
 
 # Password validation
