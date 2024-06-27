@@ -7,14 +7,20 @@ import json
 import uuid
 import secrets
 import asyncio
-from asgiref.sync import async_to_sync
+from asgiref.sync import async_to_sync, sync_to_async
+
+from .serializers import CanvasImageSerializer
+from .models import RoomInformation, CanvasImage
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
 # Initialize redis cache
 redis_instance = redis.StrictRedis(
 	host='sketchify.redis.cache.windows.net',
 	port=6380,
 	db=0,
-	password='',
+	password="",
 	ssl=True
 )
 
@@ -63,9 +69,15 @@ class CreateRoom(APIView):
 
 	parser_classes = [JSONParser]
 
-	async def insert_room_data(self,room_id,entry_code, user_name,players):
-		# Simulate async DB insertion, replace with actual async DB code
-		await asyncio.sleep(1)  # Simulate IO delay
+	def insert_room_data(self, room_id, entry_code, user_name, players, user_id):
+		RoomInformation.objects.create(
+            record_id=room_id,
+            room_name=user_name,
+            room_code=entry_code,
+            user_id=user_id,
+            players=players
+        )
+		
 		print(f"Room data inserted into DB: {room_id}, {entry_code}, {user_name}, {players}")
 		
 
@@ -110,7 +122,8 @@ class CreateRoom(APIView):
 			self.print_room_details(room_id, entry_code, user_name, players,user_id)
 
 			# Use sync_to_async to await the async function in the synchronous post method 
-			asyncio.run(self.insert_room_data(room_id, entry_code, user_name, players))
+			self.insert_room_data(room_id, entry_code, user_name, players, user_id)
+
 
 
 			# Respond with the received data
@@ -180,3 +193,66 @@ class JoinRoom(APIView):
 
 		except Exception as e:
 			return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+		
+
+class DisplayAvailableRoom(APIView):
+    """
+    An APIView to display available rooms.
+    """
+
+    def get(self, request, *args, **kwargs):
+        try:
+            # Query available rooms from the database
+            available_rooms = RoomInformation.objects.all()
+
+            # Serialize the queryset into JSON
+            room_list = []
+            for room in available_rooms:
+                room_data = {
+                    'room_id': room.record_id,
+                    'room_name': room.room_name,
+                    'room_code': room.room_code,
+                    'players': room.players,
+                    'user_id': room.user_id,
+                    # Add more fields as needed
+                }
+                room_list.append(room_data)
+
+            # Construct response
+            response = {
+                'count': len(room_list),
+                'rooms': room_list,
+            }
+
+            return Response(response, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+		
+
+
+class SaveCanvasImage(APIView):
+    """
+    API endpoint to save canvas image uploads.
+    """
+    def post(self, request, *args, **kwargs):
+        try:
+            room_id = request.data.get('room_id')
+            image_data = request.data.get('image_data')
+
+            if not room_id or not image_data:
+                return Response({"error": "room_id and image_data are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Save image data to the database
+            canvas_image = CanvasImage(room_id=room_id, image_data=image_data)
+            canvas_image.save()
+
+            # Serialize the response data
+            serializer = CanvasImageSerializer(canvas_image)
+
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    
