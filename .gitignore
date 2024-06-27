@@ -1,0 +1,13 @@
+#exclude virtual environment
+backend/env
+
+#exclude env
+backend/.env
+
+
+
+
+
+backend/sketchifybackend/sketchifybackend/__pycache__
+backend/sketchifybackend/sketchify/__pycache__
+backend/sketchifybackend/sketchify/migrations
