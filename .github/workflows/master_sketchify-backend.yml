@@ -63,5 +63,4 @@ jobs:
         id: deploy-to-webapp
         with:
           app-name: 'sketchify-backend'
-          slot-name: 'production'
           publish-profile: ${{ secrets.AzureAppService_PublishProfile_c3b5ebae805a41eeb9800b3a60a977d0 }}
