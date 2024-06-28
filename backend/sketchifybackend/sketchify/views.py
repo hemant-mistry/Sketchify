@@ -220,8 +220,8 @@ class DisplayAvailableRoom(APIView):
 
             # Construct response
             response = {
-                'count': len(room_list),
-                'rooms': room_list,
+                'count': 1,
+                'rooms': ["asasas"],
             }
 
             return Response(response, status=status.HTTP_200_OK)

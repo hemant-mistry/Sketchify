@@ -4,6 +4,7 @@ backend/env
 #exclude env
 backend/.env
 
+backend/my_env_name
 
 
 
