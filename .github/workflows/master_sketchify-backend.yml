@@ -37,8 +37,7 @@ jobs:
       - name: Zip artifact for deployment
         run: |
           cd backend/sketchifybackend
-          zip release.zip ./* -r
-          mv release.zip ../../
+          zip -r ../../release.zip ./
       
       - name: Upload artifact for deployment jobs
         uses: actions/upload-artifact@v4
@@ -60,7 +59,7 @@ jobs:
           name: python-app
 
       - name: Unzip artifact for deployment
-        run: unzip release.zip
+        run: unzip release.zip -d .
 
       - name: 'Log in to Azure'
         uses: azure/login@v1
