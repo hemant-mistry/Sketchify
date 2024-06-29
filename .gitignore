@@ -11,3 +11,4 @@ backend/.env
 backend/sketchifybackend/sketchifybackend/__pycache__
 backend/sketchifybackend/sketchify/__pycache__
 backend/sketchifybackend/sketchify/migrations
+backend/sketchifybackend/.env

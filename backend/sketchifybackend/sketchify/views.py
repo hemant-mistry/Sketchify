@@ -10,9 +10,10 @@ import asyncio
 from asgiref.sync import async_to_sync, sync_to_async
 
 from .serializers import CanvasImageSerializer
-from .models import RoomInformation, CanvasImage
+from .models import RoomInformation, CanvasImage, ActivePlayers
 import os
 from dotenv import load_dotenv
+from rest_framework.permissions import AllowAny
 load_dotenv()
 
 # Initialize redis cache
@@ -66,31 +67,20 @@ class CreateRoom(APIView):
 	"""
 	An APIView for creating new rooms
 	"""
+	permission_classes = [AllowAny]
 
 	parser_classes = [JSONParser]
 
 	def insert_room_data(self, room_id, entry_code, user_name, players, user_id):
 		RoomInformation.objects.create(
             record_id=room_id,
-            room_name=user_name,
+            admin_name=user_name,
             room_code=entry_code,
             user_id=user_id,
             players=players
         )
 		
-		print(f"Room data inserted into DB: {room_id}, {entry_code}, {user_name}, {players}")
-		
-
-	def store_room_data_in_redis(self,room_key,entry_code,user_name,players, user_id):
-
-		#Initializing the hashset
-		redis_instance.hmset(entry_code,{
-			"room_key":room_key,
-			"users":user_id,
-			"user_names":user_name,
-			"current_players":1,
-			"max_players":players
-		})
+		print(f"Room data inserted into DB: RoomInformation: {room_id}, {entry_code}, {user_name}, {players}")
 		
 	def print_room_details(self, room_id, entry_code, user_name, players, user_id):
 		print(f"Room ID: {room_id}, Entry Code: {entry_code}, User Name: {user_name}, User ID: {user_id}, Players: {players}")
@@ -107,17 +97,10 @@ class CreateRoom(APIView):
 			if not players or not user_name:
 				return Response({"error": "players and user_name are required."}, status=status.HTTP_400_BAD_REQUEST)
 
-			# Print the room name and user name in the terminal
-			print(f"Room Name: {players}, User Name: {user_name}")
-
-			
 			#Generate unique room ID and entry code
 			room_id = str(uuid.uuid4())
 			entry_code = secrets.token_hex(4)
 			user_id = self.generate_user_id()
-			room_key = room_id
-
-			self.store_room_data_in_redis(room_key,entry_code,user_name,players,user_id)
 
 			self.print_room_details(room_id, entry_code, user_name, players,user_id)
 
@@ -145,10 +128,20 @@ class JoinRoom(APIView):
 	"""
 	An APIView to Join a room
 	"""
+	permission_classes = [AllowAny]
 	parser_classes = [JSONParser]
 
 	def generate_user_id(self):
 		return str(uuid.uuid4())
+
+	def insert_to_active_users_table(self, user_name, user_id, room_code):
+		ActivePlayers.objects.create(
+			record_id = str(uuid.uuid4()),
+			user_name = user_name,
+			user_id = user_id,
+			room_code = room_code
+		)
+		print(f"Room data inserted into DB: ActivePlayers: {user_name}, {user_id}, {room_code}")
 
 	def post(self, request, *args, **kwargs):
 		try:
@@ -158,34 +151,17 @@ class JoinRoom(APIView):
 			if not room_code or not user_name:
 				return Response({"error": "room_code and user_name are required."}, status=status.HTTP_400_BAD_REQUEST)
 			
-			# Print the room name and user name in the terminal
-			print(f"Room code: {room_code}, User Name: {user_name}")
+			
 
 			#Generate unique user id for the joining user
 			user_id = self.generate_user_id()
-
-			room_data = redis_instance.hgetall(room_code)
-			if not room_data:
-				return Response({"error": "Room not found."}, status=status.HTTP_404_NOT_FOUND)
-
-			#Decode room data from bytes to string
-			decoded_room_data = {key.decode('utf-8'):value.decode('utf-8') for key,value in room_data.items()}
-
-			#update current players count
-			current_players = int(decoded_room_data.get('current_players',0))+1
-			redis_instance.hset(room_code, "current_players", current_players)
+			self.insert_to_active_users_table(user_id=user_id, user_name=user_name, room_code=room_code)
 			
-			#Append new user ID and user name to existing lists
-			redis_instance.hset(room_code,"users",f"{decoded_room_data['users']},{user_id}")
-			redis_instance.hset(room_code,"user_names", f"{decoded_room_data['user_names']},{user_name}")
-			fresh_room_data = redis_instance.hgetall(room_code)
-			fresh_decoded_room_data = {key.decode('utf-8'):value.decode('utf-8') for key,value in fresh_room_data.items()}
 
 			# Respond with the received data
 			response = {
                 "room_code": room_code,
                 "user_name": user_name,
-                "room_data": fresh_decoded_room_data,
 				"user_id":user_id
             }
 
@@ -194,7 +170,6 @@ class JoinRoom(APIView):
 		except Exception as e:
 			return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 		
-
 class DisplayAvailableRoom(APIView):
     """
     An APIView to display available rooms.
@@ -210,7 +185,7 @@ class DisplayAvailableRoom(APIView):
             for room in available_rooms:
                 room_data = {
                     'room_id': room.record_id,
-                    'room_name': room.room_name,
+                    'admin_name': room.admin_name,
                     'room_code': room.room_code,
                     'players': room.players,
                     'user_id': room.user_id,
@@ -230,21 +205,22 @@ class DisplayAvailableRoom(APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 		
 
-
 class SaveCanvasImage(APIView):
     """
     API endpoint to save canvas image uploads.
     """
+    permission_classes = [AllowAny]
     def post(self, request, *args, **kwargs):
         try:
             room_id = request.data.get('room_id')
             image_data = request.data.get('image_data')
-
+            user_id = request.data.get('user_id')
+			
             if not room_id or not image_data:
-                return Response({"error": "room_id and image_data are required."}, status=status.HTTP_400_BAD_REQUEST)
+              return Response({"error": "room_id, image_data and user_id are required."}, status=status.HTTP_400_BAD_REQUEST)
 
             # Save image data to the database
-            canvas_image = CanvasImage(room_id=room_id, image_data=image_data)
+            canvas_image = CanvasImage(user_id= user_id, room_id=room_id, image_data=image_data)
             canvas_image.save()
 
             # Serialize the response data

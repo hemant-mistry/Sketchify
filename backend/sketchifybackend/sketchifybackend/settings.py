@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from pathlib import Path
 # For fetching values from the environment variables.
 import os
+from dotenv import load_dotenv
+load_dotenv()
 
 
 
