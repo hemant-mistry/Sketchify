@@ -22,11 +22,15 @@ jobs:
         run: |
           python -m venv backend/sketchifybackend/venv
           source backend/sketchifybackend/venv/bin/activate
-      
+
       - name: Install dependencies
         run: |
           source backend/sketchifybackend/venv/bin/activate
           pip install -r backend/sketchifybackend/requirements.txt
+
+      - name: List directories for verification
+        run: |
+          ls -la backend/sketchifybackend
 
       # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
 
@@ -73,6 +77,6 @@ jobs:
 
       - name: Verify installed packages and virtual environment
         run: |
-          source /home/site/wwwroot/backend/sketchifybackend/venv/bin/activate
+          source backend/sketchifybackend/venv/bin/activate
           pip list
           which daphne
